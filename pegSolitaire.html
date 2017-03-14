@@ -1,0 +1,276 @@
+<head>
+
+
+<body>
+
+<div>
+
+
+
+<center>
+<h1>Peg Solitaire</h1>
+<canvas id="myCanvas" width="420" height="420"></canvas><br><br><br>
+<button class="button" type="button" onclick="startGame()">Start Game</button>
+<img id="source1" src="1.gif" width="0" height="0"></img>
+<img id="source2" src="2.gif" width="0" height="0"></img>
+<img id="source3" src="4.gif" width="0" height="0"></img>
+</div>
+</center>
+<style>
+.button {
+    background-color: gray; 
+    color: blue;
+    padding: 10px 20px;
+    text-align: center;
+    font-size: 20px;    
+    cursor: pointer;
+}
+
+</style>
+</head>
+
+<script>
+
+var myCanvas = document.getElementById('myCanvas');
+var ctx = myCanvas.getContext('2d');
+var board; 
+var image1 = document.getElementById("source1");
+var image2 = document.getElementById("source2");
+var image3 = document.getElementById("source3");
+var pegsCounter;
+
+function startGame() {
+	pegsCounter = 32;
+	initSimpleBoard(); 
+    initBoard();
+    play();
+}
+
+/*
+* init a board that will be used for the game logic
+*/
+function initSimpleBoard() {
+	board = [[-1, -1, 1, 1, 1, -1, -1], [-1, -1, 1, 1, 1, -1, -1], [1, 1, 1, 1, 1, 1, 1],
+	[1, 1, 1, 0, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [-1, -1, 1, 1, 1, -1, -1],
+	[-1, -1, 1, 1, 1, -1, -1]] ;
+}
+
+/*
+* check if the position is empty
+*/
+function isEmptySquare (x, y) {
+	if (board[x][y] == 0){
+		return true;
+	}
+	return false;
+}
+
+/*
+* check if the position is out of board
+*/
+function isIllegalSquare (x, y) {
+	if (board[x][y] == -1){
+		return true;
+	}
+	return false;
+}
+
+
+function move (pos) {
+	//convert pos to vars
+	var xPos = pos[0];
+	var yPos = pos[1];
+	var xTarget = pos[2];
+	var yTarget = pos[3];
+	var midPeg;	//the removed peg
+
+	//update game logic
+	board[xPos][yPos] = 0;
+	board[xTarget][yTarget]= 1;
+
+	//update game UI
+	ctx.drawImage(image2, 60*xPos, 60*yPos);
+	ctx.drawImage(image1, 60*xTarget, 60*yTarget);
+
+	//calculate the middle peg position
+	if (xPos == xTarget){
+		midPeg = (yTarget + yPos)/2;
+		board[xPos][midPeg] = 0;
+		ctx.drawImage(image2, 60*xPos, 60*midPeg);
+	}
+	else{
+		midPeg = (xTarget + xPos)/2;
+		board[midPeg][yTarget] = 0;
+		ctx.drawImage(image2, 60*midPeg, 60*yTarget);
+	}
+
+	//update the number of pegs on board
+	pegsCounter--;
+	if(pegsCounter == 1){
+		alert("You Win!");
+	}
+}
+
+function isLegalMove(pos) {
+	//convert pos to vars
+	var xPos = pos[0];
+	var yPos = pos[1];
+	var xTarget = pos[2];
+	var yTarget = pos[3];
+	var midPeg;
+
+	if (xPos < 0 || yPos < 0  || xTarget < 0 || yTarget < 0 || xPos > 6 || yPos > 6 || xTarget > 6 || yTarget > 6){		//out of bounds
+		//alert ("ERROR: Out of board!");
+		return false;
+	}
+	else if (isIllegalSquare (xPos, yPos) || isIllegalSquare (xTarget, yTarget)){ //out of board
+		return false;
+	}
+	else if (isEmptySquare (xPos, yPos)){	//position is empty
+		return false;
+	}
+	else if (!isEmptySquare(xTarget, yTarget)){	//target is not empty
+		return false;
+	}
+	else if (xPos == xTarget && Math.abs(yPos - yTarget) != 2){	//distance of the jump is not 2
+		return false;
+	}
+	else if (yPos == yTarget && Math.abs(xPos - xTarget) != 2){ //distance of the jump is not 2
+		return false;
+	}
+	else {
+		if (xPos == xTarget){
+			midPeg = (yTarget + yPos)/2;
+			if (board[xPos][midPeg] != 1){
+				return false;
+			}
+		}
+		else{
+			midPeg = (xTarget + xPos)/2;
+			if (board[midPeg][yTarget] != 1){
+				return false;
+			}
+		}
+		return true;
+	}
+
+}
+/*
+*	checks if there is a legal move with the current board
+*/
+function isThereALegalMove(){
+	var i;
+	var j;
+	var arr;
+	for (i=0; i<7; i++){
+		for (j=0; j<7; j++){
+			arr = [];
+			arr.push(i);
+			arr.push(j);
+			if (board[i][j] == 1) {
+				arr.push(i);
+				arr.push(j+2);
+				if (isLegalMove(arr)){
+					return true;
+				}
+				arr.pop();
+				arr.push(j-2);
+				if (isLegalMove(arr)){
+					return true;
+				}
+				arr.pop();
+				arr.pop();
+				arr.push(i+2);
+				arr.push(j);
+				if (isLegalMove(arr)){
+					return true;
+				}
+				arr.pop();
+				arr.pop();
+				arr.push(i-2);
+				arr.push(j);
+				if (isLegalMove(arr)){
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
+/* UI */
+
+/*
+*	init UI board
+*/
+function initBoard(){
+
+    var i, j;
+    for (i=0; i<7; i++){
+        for (j=0; j<7; j++){
+            if (i<2 || i>4){
+                if (j<2 || j>4){
+                    ctx.drawImage(image3, 60*i, 60*j);
+                }
+                else {
+                    ctx.drawImage(image1, 60*i, 60*j);
+                }
+            }
+            else{
+                if (i == 3 && j == 3){
+                    ctx.drawImage(image2, 60*i, 60*j);
+                }
+                else {
+                    ctx.drawImage(image1, 60*i, 60*j);
+                }
+            }
+        }
+    }
+}
+/*
+* get the position of the user click
+*/
+function getPosition(canvas, e) {
+    var rect = canvas.getBoundingClientRect();
+    var x = e.clientX - rect.left;
+    var y = e.clientY - rect.top;
+
+    return [Math.floor(x/60),Math.floor(y/60)];
+}
+
+function play(){
+	var pos = [];	//for the current click coordinates
+	var i = 0;	//for counting the number of mouse clicks on board
+	var fullMove = [];	//for source click and target click coordinates
+
+    myCanvas.addEventListener("click", function(e){	//handle mouse click
+		pos = getPosition(myCanvas, e);
+		fullMove.push(pos[0]);
+		fullMove.push(pos[1]);
+		i++;
+
+		if (i == 2){	//the user clicked twice -> end of move
+			i = 0;
+			if (isLegalMove(fullMove)){
+				move(fullMove);
+				if(!isThereALegalMove()){
+					alert("Game Over");
+				}
+			}
+			else{
+				alert("Illegal move. Please try again");
+			}
+			for (var j = 0; j<4; j++){
+				fullMove.pop();
+			}
+		}
+
+	});
+	
+}
+
+
+</script>
+
+</body>
+</html>
